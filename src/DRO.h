@@ -6,7 +6,9 @@
 //#define SPI_HALF_SPEED 1
 
 #define DEBUG
-#define RA8875
+//ici on definit le type d'ecran
+//#define RA8875
+#define SCREEN_ESP32
 
 #define int32 int32_t
 #define uint16 uint16_t

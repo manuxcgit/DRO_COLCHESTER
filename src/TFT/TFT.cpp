@@ -1,8 +1,8 @@
 #include "TFT.h"
 
 #define display __tft
-#define BLACK RA8875_BLACK
-#define WHITE RA8875_WHITE
+//#define BLACK RA8875_BLACK
+#//define WHITE RA8875_WHITE
 
 void TFT::Active_Window(uint16_t XL, uint16_t XR, uint16_t YT, uint16_t YB)
 {
