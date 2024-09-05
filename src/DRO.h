@@ -67,6 +67,14 @@ void m_videSerial();
 /// @return 
 bool m_Get_Serial(bool pAfficheXYZ);
 
+class Point{
+    public:
+        uint16_t x;
+        uint16_t y;
+        Point();
+        Point(uint16_t pX, uint16_t pY){ x = pX; y = pY;}
+};
+
 class AXE{
 public:
     static uint32_t TimerDRO, TimerDRO_LAST; //Pour calcul RPM
@@ -128,7 +136,6 @@ private:
     int8_t  Pas;
     int8_t  Name;
 };
-
 
 static int16_t m_GCD(int pA, int pB) {
 	int v_reste;

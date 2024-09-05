@@ -7,7 +7,6 @@
     #define PIN_TFT_CS GPIO_NUM_5
     #define PIN_TFT_RESET GPIO_NUM_17
 
-
     #define LCD_DataWrite __tft.writeData
     #define LCD_CmdWrite __tft.writeCommand
     #define uchar byte 
@@ -18,7 +17,7 @@
     #define Delay10ms(X) delay(10*X)
     #define Delay100ms(X) delay(100*X)
     #define ulong long
-
+/*
     #define LCD_DataWrite __tft.writeData
     #define LCD_CmdWrite __tft.writeCommand
     #define uchar byte 
@@ -29,8 +28,7 @@
     #define Delay10ms(X) delay(10*X)
     #define Delay100ms(X) delay(100*X)
     #define ulong long
-
-
+*/
     #define	cSetD0		     0x01
     #define	cSetD1		     0x02
     #define	cSetD2		     0x04
@@ -74,10 +72,6 @@
     #define cSetD6D5ClrD4	 0x60
     #define cSetD6D5D4		 0x70
 
-
-//#define uint uint8_t
-//#define uint16 uint16_t
-
     #include <Adafruit_GFX.h>
     #include "Adafruit_RA8875.h"
     #define BLACK RA8875_BLACK
@@ -85,30 +79,59 @@
 #endif
 #ifdef SCREEN_ESP32
     #include <Arduino_GFX_Library.h>
+    #include "TOUCH\TAMC_GT911.h"
+    /*
     typedef struct Point {
         int32_t x;
         int32_t y;
     } tsPoint_t;
+    */
+    class Arduino_RPi_DPI_RGBPanel_extended : public Arduino_RPi_DPI_RGBPanel {
+        public:
+            Arduino_RPi_DPI_RGBPanel_extended(
+            Arduino_ESP32RGBPanel *bus,
+            int16_t w, uint16_t hsync_polarity, uint16_t hsync_front_porch, uint16_t hsync_pulse_width, uint16_t hsync_back_porch,
+            int16_t h, uint16_t vsync_polarity, uint16_t vsync_front_porch, uint16_t vsync_pulse_width, uint16_t vsync_back_porch,
+            uint16_t pclk_active_neg = 0, int32_t prefer_speed  = GFX_NOT_DEFINED, bool auto_flush = true);
+
+            void touchInit();
+            //retourne coordonnées du Touch ou 0,0 sinon
+            void touchGet(uint16_t *pX, u_int16_t *pY);
+
+            //pour compatibite avec RA8875    
+            void graphicsMode();
+            void textMode();
+            void textEnlarge(int pSize);
+            void textSetCursor(uint16 pX, uint16 pY);
+            ///////////////////////
+        private :
+            TAMC_GT911 _ts = TAMC_GT911(TOUCH_GT911_SDA, TOUCH_GT911_SCL, TOUCH_GT911_INT, TOUCH_GT911_RST, max(TOUCH_MAP_X1, TOUCH_MAP_X2), max(TOUCH_MAP_Y1, TOUCH_MAP_Y2)); 
+   };
+    //pour compatibite avec RA8875   
+    void LCD_CmdWrite(uint8_t p);
+    void LCD_DataWrite(uint8_t p);
+    int LCD_DataRead();
+    int LCD_StatusRead();
+    #define cSetD6 0
+    #define cSetD7 0
+    ///////////////////////////////
 #endif
 
 class TFT{
-
 #ifdef RA8875
     Adafruit_RA8875 __tft = Adafruit_RA8875(PIN_TFT_CS, PIN_TFT_RESET);
     public:
         void clr(int8_t pSize){ __tft.fillScreen(0); __tft.textEnlarge(pSize);}
 #endif
-
 #ifdef SCREEN_ESP32
-    #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
-    #define RA8875_BLACK BLACK
-    #define RA8875_WHITE WHITE
-    #define RA8875_RED RED
-    #define RA8875_GREEN GREEN
-    #define RA8875_BLUE BLUE
+    #define GFX_BL          DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
+    #define RA8875_BLACK    BLACK
+    #define RA8875_WHITE    WHITE
+    #define RA8875_RED      RED
+    #define RA8875_GREEN    GREEN
+    #define RA8875_BLUE     BLUE
     #define TFT_BL 2
-    //#define __tft.textEnlarge __tft.setTextSize
-    #define uchar u_int8_t
+    #define uchar u_int8_t    
 
     Arduino_ESP32RGBPanel bus = Arduino_ESP32RGBPanel(
         GFX_NOT_DEFINED /* CS */, GFX_NOT_DEFINED /* SCK */, GFX_NOT_DEFINED /* SDA */,
@@ -117,18 +140,12 @@ class TFT{
         9 /* G0 */, 46 /* G1 */, 3 /* G2 */, 8 /* G3 */, 16 /* G4 */, 1 /* G5 */,
         15 /* B0 */, 7 /* B1 */, 6 /* B2 */, 5 /* B3 */, 4 /* B4 */
     );
-
-    Arduino_RPi_DPI_RGBPanel __tft = Arduino_RPi_DPI_RGBPanel(
-    &bus,
-    //  800 /* width */, 0 /* hsync_polarity */, 8/* hsync_front_porch */, 2 /* hsync_pulse_width */, 43/* hsync_back_porch */,
-    //  480 /* height */, 0 /* vsync_polarity */, 8 /* vsync_front_porch */, 2/* vsync_pulse_width */, 12 /* vsync_back_porch */,
-    //  1 /* pclk_active_neg */, 16000000 /* prefer_speed */, true /* auto_flush */);
-
+    Arduino_RPi_DPI_RGBPanel_extended __tft = Arduino_RPi_DPI_RGBPanel_extended(
+        &bus,
         800 /* width */, 0 /* hsync_polarity */, 210 /* hsync_front_porch */, 30 /* hsync_pulse_width */, 16 /* hsync_back_porch */,
         480 /* height */, 0 /* vsync_polarity */, 22 /* vsync_front_porch */, 13 /* vsync_pulse_width */, 10 /* vsync_back_porch */,
         1 /* pclk_active_neg */, 16000000 /* prefer_speed */, true /* auto_flush */);
 
-    #include "TOUCH\touch.h"
     public :
         void clr(int8_t pSize){ __tft.fillScreen(0); __tft.setTextSize(pSize);}
 
@@ -143,7 +160,7 @@ public:
     int8_t MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX, int32_t pPosY, int32_t pPosBroche);//retourne si OK
     int8_t IfTouched(uint16_t pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, bool pWriteTXT);//retourne la position du button touché
     void print(String pS){__tft.print(pS);}
-    void printTXT(char* pText, int pX, int pY, uint16_t pTextColor, uint16_t pBackColor, int pSize);
+    void printTXT(char* pText, uint16 pX, uint16 pY, uint16_t pTextColor, uint16_t pBackColor, int pSize);
     //void clr(int8_t pSize){ __tft.fillScreen(0); __tft.textEnlarge(pSize);}
 
 private:
@@ -156,6 +173,7 @@ private:
     void toTXT(int32_t pValue, bool pPoint);
     void Button(uint16_t pX, uint16_t pY, uint8_t pSize, uint16_t pTextColor, uint16_t pBackColor,  char* pText, uint8_t pDecalageY);
     void SetTextColor(uint16_t pColor, bool pFront);
+    void SetTextColor32(uint16_t pFColor, uint16_t pBColor);
     void Calcul_Coordonnees(double pValue);
 
     bool m_readTouch();

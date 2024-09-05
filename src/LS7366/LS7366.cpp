@@ -13,18 +13,25 @@
    left_extend_MSB(value to exend) in both read_counter and read_OTR.  The reason for this is that the
    MSB needs to be left extended in 1, 2, and 3 bit modes and this helper function takes care of that.
 */
+
 LS7366::LS7366(){}
 
 void LS7366::init(byte chip_select_pin)
 {
-//	Serial.println("LS7366");
-//	return;
+    static bool FirstInit = true;
 	CS_pin = chip_select_pin;
 	pinMode(CS_pin,OUTPUT);
 	digitalWrite(CS_pin, HIGH);
 	datawidth = 4; //Datawidth of 4 is the default
-//	return;
-	SPI.begin();
+	if (FirstInit){
+		SPI.begin();
+		FirstInit = false;
+	}
+	write_mode_register_0(FILTER_1 | DISABLE_INDX | FREE_RUN | QUADRX4);
+    write_mode_register_1(NO_FLAGS | EN_CNTR | BYTE_4 );
+    clear_counter();
+    clear_status_register();
+    write_data_register(4);
 }
 
 void LS7366::clear_mode_register_0()

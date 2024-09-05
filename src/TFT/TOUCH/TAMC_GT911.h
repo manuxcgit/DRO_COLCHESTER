@@ -134,6 +134,17 @@
 #define GT911_POINT_5           (uint16_t)0X816F
 #define GT911_POINTS_REG        {GT911_POINT_1, GT911_POINT_2, GT911_POINT_3, GT911_POINT_4, GT911_POINT_5}
 
+#define TOUCH_GT911
+#define TOUCH_GT911_SCL 20
+#define TOUCH_GT911_SDA 19
+#define TOUCH_GT911_INT -1
+#define TOUCH_GT911_RST 38
+#define TOUCH_GT911_ROTATION ROTATION_NORMAL
+#define TOUCH_MAP_X1 800
+#define TOUCH_MAP_X2 0
+#define TOUCH_MAP_Y1 480
+#define TOUCH_MAP_Y2 0
+
 class TP_Point {
   public:
     TP_Point(void);
@@ -146,6 +157,12 @@ class TP_Point {
     uint16_t x;
     uint16_t y;
     uint8_t size;
+};
+
+class Point_GT{
+  public:
+    uint16_t x;
+    u_int16_t y;
 };
 
 class TAMC_GT911 {
@@ -163,6 +180,7 @@ class TAMC_GT911 {
     bool isTouched = false;
     // uint8_t gesture = NO_GESTURE;
     TP_Point points[5];
+    Point_GT touchXY;
 
   private:
     void calculateChecksum();

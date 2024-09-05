@@ -1,8 +1,57 @@
 #include "TFT.h"
 
 #define display __tft
-//#define BLACK RA8875_BLACK
-#//define WHITE RA8875_WHITE
+
+#ifdef SCREEN_ESP32
+	#include <Arduino_GFX_Library.h>
+
+	Arduino_RPi_DPI_RGBPanel_extended::Arduino_RPi_DPI_RGBPanel_extended( 
+		Arduino_ESP32RGBPanel *bus,
+		int16_t w, uint16_t hsync_polarity, uint16_t hsync_front_porch, uint16_t hsync_pulse_width, uint16_t hsync_back_porch,
+		int16_t h, uint16_t vsync_polarity, uint16_t vsync_front_porch, uint16_t vsync_pulse_width, uint16_t vsync_back_porch,
+		uint16_t pclk_active_neg, int32_t prefer_speed , bool auto_flush) : 
+	  	Arduino_RPi_DPI_RGBPanel(
+				bus,
+                w,  hsync_polarity,  hsync_front_porch,  hsync_pulse_width,  hsync_back_porch,
+                h,  vsync_polarity, vsync_front_porch, vsync_pulse_width, vsync_back_porch,
+            	pclk_active_neg , prefer_speed , true)
+		{}
+	
+	void Arduino_RPi_DPI_RGBPanel_extended::touchInit(){
+		Wire.begin(TOUCH_GT911_SDA, TOUCH_GT911_SCL);
+		_ts.begin();
+		_ts.setRotation(TOUCH_GT911_ROTATION);
+	}
+
+	void Arduino_RPi_DPI_RGBPanel_extended::touchGet(uint16_t *pX, uint16_t *pY){
+		_ts.read();
+		if (_ts.isTouched){
+			#if defined(TOUCH_SWAP_XY)
+				_ts.touchX = map(_ts.points[0].y, TOUCH_MAP_X1, TOUCH_MAP_X2, 0, gfx->width() - 1);
+				_ts.touchY = map(_ts.points[0].x, TOUCH_MAP_Y1, TOUCH_MAP_Y2, 0, gfx->height() - 1);
+			#else
+				_ts.touchXY.x = map(_ts.points[0].x, TOUCH_MAP_X1, TOUCH_MAP_X2, 0, 799);
+				_ts.touchXY.y = map(_ts.points[0].y, TOUCH_MAP_Y1, TOUCH_MAP_Y2, 0, 479);
+			#endif
+			*pX = _ts.touchXY.x;
+			*pY = _ts.touchXY.y;
+			}
+  		else{
+			*pX = 0;
+			*pY = 0;
+			}
+	}
+
+	void Arduino_RPi_DPI_RGBPanel_extended::graphicsMode() {}
+    void Arduino_RPi_DPI_RGBPanel_extended::textMode() {}
+    void Arduino_RPi_DPI_RGBPanel_extended::textEnlarge(int pSize) { setTextSize(pSize); }
+    void Arduino_RPi_DPI_RGBPanel_extended::textSetCursor(uint16 pX, uint16 pY) { setCursor( pX, pY); }
+				
+    void LCD_CmdWrite(uint8_t p){}
+    void LCD_DataWrite(uint8_t p){}
+    int LCD_DataRead() {return 0;}
+    int LCD_StatusRead() {return 0;}
+#endif
 
 void TFT::Active_Window(uint16_t XL, uint16_t XR, uint16_t YT, uint16_t YB)
 {
@@ -48,7 +97,8 @@ char result[8] ;
 ///////////////////////////////////////////
 bool TFT::Init(){
 	bool _found = false;
-	Serial.println("TFT start");	
+	Serial.println("TFT start");
+#ifdef RA8875	
 	if (!__tft.begin(RA8875_800x480)) {
 		Serial.println("TFT Not Found!");
 	}
@@ -69,6 +119,11 @@ bool TFT::Init(){
 	__tft.touchEnable(true);
 	_oldX = _oldY = _oldZ = _old_Y_Stop = 0;
 	return _found;
+#endif
+#ifdef SCREEN_ESP32
+	__tft.begin();
+	return true;
+#endif
 }
 
 //enum ScreenStates {screen_XYZ, screen_RPM, screen_Filetage, screen_Position_Broche, screen_value_Axe};
@@ -191,14 +246,20 @@ void TFT::MenuValue(uint8_t pAxe){
 		__tft.fillRect(200, 250, 200, 50, RA8875_BLACK);
 		__tft.textEnlarge(2);
 	}
+	//SetTextColor(RA8875_WHITE, true);
+#ifdef RA8875
 	SetTextColor(RA8875_WHITE, true);
+#endif
+#ifdef SCREEN_ESP32
+	SetTextColor32(WHITE, BLACK);
+#endif
 	delay(500);
 }
 
 int8_t _button, _GCD;
 int32_t  _nextRetombee;
 double 	_decalage, _decalageOld, _calcul1, _calcul2, _calcul3;
-Point _PointFiletage;
+Point _PointFiletage(0, 0);
 /// @brief -1 = RIEN, 0 = OK, 1 = ANNULER, 2 = ENCOURS
 /// @return 
 int8_t TFT::MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX,  int32_t pPosY, int32_t pPosBroche){
@@ -349,7 +410,13 @@ int8_t TFT::MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX,  int3
 		_decalageOld = _decalage;
 		//Affiche Index de retombée
 		__tft.textMode();
-		SetTextColor(WHITE, true);
+		//SetTextColor(WHITE, true);
+#ifdef RA8875
+	SetTextColor(WHITE, true);
+#endif
+#ifdef SCREEN_ESP32
+	SetTextColor32(WHITE, BLACK);
+#endif
 		__tft.textEnlarge(3);
 		__tft.textSetCursor(420,220);
 		__tft.print((int)((_nextRetombee - _calcul3) / 6000), DEC);
@@ -451,7 +518,11 @@ void TFT::toTXT(int32 pValue, bool pPoint){
 }
 
 void TFT::SetTextColor(uint16_t pColor, bool pFront){
+#ifdef SCREEN_ESP32
+	//#error SET_TEXT_COLOR
+#endif
 	switch (pColor)	{
+#ifdef RA8875
 		case  RA8875_RED:
 			if (pFront) {Text_Foreground_Color (255,0,0);}
 			else {Text_Background_Color(255,0,0);}
@@ -472,17 +543,27 @@ void TFT::SetTextColor(uint16_t pColor, bool pFront){
 			if (pFront) {Text_Foreground_Color (0,0,0);}
 			else {Text_Background_Color(0,0,0);}
 			break;
+#endif
 		default:
 		break;
 	}
+}
+
+void TFT::SetTextColor32(uint16_t pFColor, uint16_t pBColor){
+	__tft.setTextColor(pFColor, pBColor);
 }
 
 void TFT::Button(uint16 pX, uint16 pY, uint8_t pSize, uint16_t pFrontColor, uint16_t pBackColor, char* pText, uint8_t pDecalageY){
 	__tft.graphicsMode();
 	__tft.fillRoundRect(pX, pY, 12 * pSize, 7 * pSize, pSize, pBackColor);
 	Text_Foreground_Color(255, 255, 255);
+#ifdef RA8875
 	SetTextColor(pFrontColor, true);
 	SetTextColor(pBackColor, false);
+#endif
+#ifdef SCREEN_ESP32
+	SetTextColor32(pFrontColor, pBackColor);
+#endif
 	__tft.textMode();
 	if (pSize>8){__tft.textEnlarge(3);}
 	else {__tft.textEnlarge(2);}
@@ -490,11 +571,16 @@ void TFT::Button(uint16 pX, uint16 pY, uint8_t pSize, uint16_t pFrontColor, uint
 	__tft.print(pText);
 }
 
-void TFT::printTXT(char* pText, int pX, int pY, uint16_t pTextColor, uint16_t pBackColor, int pSize){
+void TFT::printTXT(char* pText, uint16 pX, uint16 pY, uint16_t pTextColor, uint16_t pBackColor, int pSize){
 	__tft.textMode();
 	__tft.textSetCursor(pX, pY);
+#ifdef RA8875
 	SetTextColor(pTextColor, true);
 	SetTextColor(pBackColor, false);
+#endif
+#ifdef SCREEN_ESP32
+	SetTextColor32(pTextColor, pBackColor);
+#endif
 	__tft.print(pText);
 }
 
@@ -538,22 +624,26 @@ void TFT::Chk_Busy(void)
 }
 
 bool TFT::m_readTouch() { //retrun true si detecte ecran touch�
-	__tft.touchRead(&v_XTouch, &v_YTouch);
+	__tft.touchGet(&v_XTouch, &v_YTouch);
 	delay(1);
-	if (__tft.touched()) {
-		__tft.touchRead(&v_XTouch, &v_YTouch);
+	if ((v_XTouch != 0) | (v_XTouch != 0)) {
+		delay(10);
+		__tft.touchGet(&v_XTouch, &v_YTouch);
+		/*
 		v_XTouch = map(v_XTouch, 70, 970, 0, 800);
 		v_YTouch = map(v_YTouch, 104, 880, 0, 480);
 		if (v_XTouch <= 0) { v_XTouch = 1; }
 		if (v_XTouch >= 800) { v_XTouch = 799; }
 		if (v_YTouch <= 0) { v_YTouch = 1; }
 		if (v_YTouch >= 480) { v_YTouch = 479; }
+		*/
 		return true;
 	}
 	else
 	{
 		return false;
 	}
+return false;
 }
 
 /*

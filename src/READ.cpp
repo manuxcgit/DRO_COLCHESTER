@@ -1,4 +1,4 @@
-#include "ESP32_OTA\ESP32_OTA.h"
+#include <ESP32_OTAESP32_OTA.h>
 #include "DRO.h"
 #include "LS7366/LS7366.h"
 #include "CRC/CRC.h"
@@ -41,10 +41,7 @@ void loop(void) {
 			_VALUE[(i * 4)] = (_value & 0xff000000) >> 24;
 			_VALUE[(i * 4) + 1] = (_value & 0xff0000) >> 16;
 			_VALUE[(i * 4) + 2] = (_value & 0xff00) >> 8;
-			_VALUE[(i * 4) + 3] = (_value & 0xff);
-			
-		//Serial.write(_value);
-			
+			_VALUE[(i * 4) + 3] = (_value & 0xff);			
 		}
 		_elapsed = millis();
 		_VALUE[16] =(_elapsed & 0xff000000) >> 24;
@@ -57,9 +54,6 @@ void loop(void) {
 		for (int i=0; i<21; i++){
 			Serial.write(_VALUE[i]);
 		}	
-		
-	////Serial.write(_elapsed);
-//	Serial.write(_CRC);	
 		_elapsed = millis();
 	}
 

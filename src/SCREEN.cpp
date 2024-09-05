@@ -1,4 +1,4 @@
-#include "ESP32_OTA\ESP32_OTA.h"
+#include <ESP32_OTA\ESP32_OTA.h>
 #include "DRO.h"
 #include "TFT/TFT.h"
 #include "CRC\CRC.h"
@@ -7,7 +7,13 @@
 const char* ssid = "ESP32_DRO_SCREEN";
 const char* password = "12345678";
 int v_count;
-TFT _tft;
+
+#ifdef RA8875
+    TFT __tft;
+#endif
+#ifdef SCREEN_ESP32
+	TFT _tft;
+#endif
 uint8_t _valuesSerial[21]; //XXXX, YYYY, ZZZZ, BBBB, Timer, CRC
 uint8_t _CRC, _axe_modif_value, _RPM_count, _Serial_Got; //calcul CRC, axe dont on modifie la valeur, conteur pour RAZ compteur de broche en mode RPM toutes les 10 secondes
 ScreenStates _screenState, _screenState_Last;
