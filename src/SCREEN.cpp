@@ -357,7 +357,7 @@ void setup(void) {
 			delay(250);
 		}
 	}
-	for (size_t i = 0; i < 13; i++)
+	for (size_t i = 0; i < 20; i++)
 	{
 		_valuesSerial[i] = 0;
 	}

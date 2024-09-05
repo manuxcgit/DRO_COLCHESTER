@@ -208,6 +208,7 @@ void TFT::MenuMain(int32_t pX, int32_t pY, int32_t pZ, bool pRefresh, uint8_t pT
 		__tft.textEnlarge(3);
 	}
 }
+
 void TFT::MenuValue(uint8_t pAxe){
 	//affiche clavier numerique
 	char _c[2];
