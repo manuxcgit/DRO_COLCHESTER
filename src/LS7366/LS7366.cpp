@@ -16,7 +16,7 @@
 
 LS7366::LS7366(){}
 
-void LS7366::init(byte chip_select_pin)
+void LS7366::init(byte chip_select_pin, byte count_mode)
 {
     static bool FirstInit = true;
 	CS_pin = chip_select_pin;
@@ -27,7 +27,7 @@ void LS7366::init(byte chip_select_pin)
 		SPI.begin();
 		FirstInit = false;
 	}
-	write_mode_register_0(FILTER_1 | DISABLE_INDX | FREE_RUN | QUADRX4);
+	write_mode_register_0(FILTER_1 | DISABLE_INDX | FREE_RUN | count_mode);
     write_mode_register_1(NO_FLAGS | EN_CNTR | BYTE_4 );
     clear_counter();
     clear_status_register();

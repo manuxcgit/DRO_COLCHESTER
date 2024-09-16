@@ -23,7 +23,7 @@
 		_ts.setRotation(TOUCH_GT911_ROTATION);
 	}
 
-	void Arduino_RPi_DPI_RGBPanel_extended::touchGet(uint16_t *pX, uint16_t *pY){
+	void Arduino_RPi_DPI_RGBPanel_extended::touchGet(Point *pPoint){
 		_ts.read();
 		if (_ts.isTouched){
 			#if defined(TOUCH_SWAP_XY)
@@ -33,12 +33,10 @@
 				_ts.touchXY.x = map(_ts.points[0].x, TOUCH_MAP_X1, TOUCH_MAP_X2, 0, 799);
 				_ts.touchXY.y = map(_ts.points[0].y, TOUCH_MAP_Y1, TOUCH_MAP_Y2, 0, 479);
 			#endif
-			*pX = _ts.touchXY.x;
-			*pY = _ts.touchXY.y;
+			*pPoint = Point(_ts.touchXY.x, _ts.touchXY.y);
 			}
   		else{
-			*pX = 0;
-			*pY = 0;
+			*pPoint = Point(0,0);
 			}
 	}
 
@@ -122,89 +120,229 @@ bool TFT::Init(){
 #endif
 #ifdef SCREEN_ESP32
 	__tft.begin();
+#ifdef TFT_BL
+    pinMode(TFT_BL, OUTPUT);
+    digitalWrite(TFT_BL, HIGH);
+#endif
+	__tft.touchInit();
 	return true;
 #endif
 }
 
+void TFT::Buttons_Init(ScreenStates pScreenState, byte pNBr, cBUTTON *pButton, ...){
+	va_list _button;
+	va_start (_button, pButton);
+	byte _index = 1;
+	cBUTTON *b;
+
+#ifdef DEBUG
+	Serial.print("Screenstate ");
+	Serial.println((byte) pScreenState, DEC);
+	Serial.print("pNbr ");
+	Serial.println(pNBr, DEC);
+#endif
+
+	Buttons[(byte) pScreenState][0] = pButton;
+#ifdef DEBUG
+	Serial.println(pButton->name);
+#endif
+	while(_index < pNBr)
+	{
+		b = va_arg(_button, cBUTTON*);
+#ifdef DEBUG
+		Serial.println((long)b);
+#endif		
+		Buttons[(byte) pScreenState][_index] = b;
+#ifdef DEBUG
+		Serial.print("Nom :");
+		Serial.println(b->name);
+#endif
+		_index ++;
+#ifdef DEBUG
+	Serial.print("_index ");
+	Serial.println(_index, DEC);
+#endif
+	}
+#ifdef DEBUG
+	Serial.print("Nbr buttons ");
+	Serial.println(_index, DEC);
+	Serial.print("Nbr total ");
+#endif
+	while(_index < (sizeof(Buttons[(byte)pScreenState]) / 4)){	
+		Buttons[(byte) pScreenState][_index] = 0;// nullptr;
+		_index++;
+	}
+	va_end(_button); // r
+#ifdef DEBUG
+	Serial.println(_index, DEC);
+#endif
+}
+
+void TFT::Buttons_Init(){
+#ifdef DEBUG
+	Serial.println("Buttons Init");
+#endif
+	button_bCX = cBUTTON(Point(580, 60) , 100, 90, 7, bnCX, "C", WHITE, RED, m_ModifValue);
+	button_bCY = cBUTTON(Point(580, 190) , 100, 90, 7, bnCY, "C", WHITE, RED, m_ModifValue);
+	button_bCZ = cBUTTON(Point(580, 320) , 100, 90, 7, bnCZ, "C", WHITE, RED, m_ModifValue);
+	button_bVX = cBUTTON(Point(720, 60) , 100, 90, 7, bnX, "X", WHITE, GREEN, m_ModifValue);
+	button_bVY = cBUTTON(Point(720, 190) , 100, 90, 7, bnY, "Y", WHITE, GREEN, m_ModifValue);
+	button_bVZ = cBUTTON(Point(720, 320) , 100, 90, 7, bnZ, "Z", WHITE, GREEN, m_ModifValue);
+	button_bXYZ = cBUTTON(Point(100, 420) , 150, 80, 5, bnXYZ, "XYZ", BLACK, BLUE, m_ModifValue);
+	button_bRPM = cBUTTON(Point(290, 420) , 150, 80, 5, bnRPM, "RPM", BLACK, BLUE, m_ModifValue);
+	button_bCANGLE = cBUTTON(Point(580, 320) , 100, 90, 7, bnCAngle, "C", WHITE, RED, m_ModifValue);
+	button_bFILETAGE = cBUTTON(Point(500, 420) , 150, 80, 5, bnFILETAGE, "FIL", BLACK, BLUE, m_ModifValue);
+	button_bANGLE = cBUTTON(Point(700, 420) , 150, 80, 5, bnANGLE, "ANG", BLACK, BLUE, m_ModifValue);
+	button_bANNULE = cBUTTON(Point(615, 420) , 150, 80, 5, bnANNULE, "ANNULE", WHITE, RED, m_ModifValue);
+	button_bVALIDE = cBUTTON(Point(200, 420) , 150, 80, 5, bnVALIDE, "OK", WHITE, GREEN, m_ModifValue);
+	button_b0 = cBUTTON(Point(635, 230) , 100, 50, 5, bn0, "0", BLACK, BLUE, m_ModifValue);
+	button_b1 = cBUTTON(Point(525, 50) , 100, 50, 5, bn1, "1", BLACK, BLUE, m_ModifValue);
+	button_b2 = cBUTTON(Point(635, 50) , 100, 50, 5, bn2, "2", BLACK, BLUE, m_ModifValue);
+	button_b3 = cBUTTON(Point(745, 50) , 100, 50, 5, bn3, "3", BLACK, BLUE, m_ModifValue);
+	button_b4 = cBUTTON(Point(525, 110) , 100, 50, 5, bn4, "4", BLACK, BLUE, m_ModifValue);
+	button_b5 = cBUTTON(Point(635, 110) , 100, 50, 5, bn5, "5", BLACK, BLUE, m_ModifValue);
+	button_b6 = cBUTTON(Point(745, 110) , 100, 50, 5, bn6, "6", BLACK, BLUE, m_ModifValue);
+	button_b7 = cBUTTON(Point(525, 170) , 100, 50, 5, bn7, "7", BLACK, BLUE, m_ModifValue);
+	button_b8 = cBUTTON(Point(635, 170) , 100, 50, 5, bn8, "8", BLACK, BLUE, m_ModifValue);
+	button_b9 = cBUTTON(Point(745, 170) , 100, 50, 5, bn9, "9", BLACK, BLUE, m_ModifValue);
+	button_bplus = cBUTTON(Point(745, 230) , 100, 50, 5, bnp, ">", BLACK, BLUE, m_ModifValue);
+	button_bmoins = cBUTTON(Point(525, 230) , 100, 50, 5, bnm, "<", BLACK, BLUE, m_ModifValue);
+	button_StopY = cBUTTON(Point(100, 260) , 150, 30, 3, bnStopY, "Y Stop", BLACK, WHITE, m_ModifValue);
+	button_bplusmoins = cBUTTON(Point(635, 300) , 150, 50, 5, bnpm, "+/-", BLACK, BLUE, m_ModifValue);
+#ifdef DEBUG
+	Serial.println("Buttons Init ok");
+#endif
+
+	Buttons_Init(screen_Filetage, 2, &button_bANNULE, &button_bVALIDE);
+	Buttons_Init(screen_RPM, 8, &button_bXYZ, &button_bFILETAGE, &button_bANGLE, 
+            &button_bCX, &button_bVX, &button_bCY, &button_bVY, &button_StopY);
+	Buttons_Init(screen_Position_Broche, 9, &button_bXYZ, &button_bRPM, &button_bFILETAGE, 
+            &button_bCX, &button_bVX, &button_bCY, &button_bVY, &button_bCANGLE, &button_StopY);
+	Buttons_Init(screen_XYZ, 10, &button_bRPM, &button_bFILETAGE, &button_bANGLE, 
+            &button_bCX, &button_bVX, &button_bCY, &button_bVY, &button_bCZ, &button_bVZ, &button_StopY);
+	Buttons_Init(screen_value_Axe, 13, &button_b1, &button_b2, &button_b3, &button_b4, &button_b5, &button_b6, &button_b7, &button_b8, &button_b9, &button_b0,
+            &button_bmoins, &button_bplus, &button_bplusmoins);
+}
+
+void TFT::DessineButton( cBUTTON pButton, bool pInverted){
+	__tft.graphicsMode();
+	int16_t _fColor, _bColor;
+	if (pInverted){
+		_fColor = pButton.backColor;
+		_bColor = pButton.textColor;
+	}
+	else{
+		_fColor = pButton.textColor;
+		_bColor = pButton.backColor;
+	}
+	__tft.fillRoundRect( pButton.center.x - (pButton.length / 2), pButton.center.y - (pButton.height / 2),
+						pButton.length, pButton.height, pButton.textSize * 3, _bColor);
+	__tft.setCursor(pButton.center.x - (pButton.textSize * 2.5 * pButton.texte.length()), pButton.center.y - (pButton.textSize * 3.5 ));
+	__tft.setTextColor(_fColor, _bColor);
+	__tft.setTextSize(pButton.textSize);
+	__tft.print(pButton.texte);
+}
+
+void TFT::Buttons_Draw(ScreenStates pScreenState){
+	byte _index = 0;
+	while(_index < sizeof(Buttons[(byte)pScreenState])){	
+		if (Buttons[(byte)pScreenState][_index] == 0){
+			break;
+		}
+		DessineButton(*Buttons[(byte)pScreenState][_index], false);
+		_index++;
+	}
+}
 //enum ScreenStates {screen_XYZ, screen_RPM, screen_Filetage, screen_Position_Broche, screen_value_Axe};
-void TFT::MenuMain(int32_t pX, int32_t pY, int32_t pZ, bool pRefresh, uint8_t pTypeZ, int32_t pStopY){
+void TFT::MenuMain(int32_t pX, int32_t pY, int32_t pZ, bool pRefresh, uint8_t pTypeZ, int32_t pStopY, byte pModifAxe){
 	if (pRefresh){
 		//__tft.graphicsMode();
 		__tft.fillScreen(0);
 		__tft.textEnlarge(3);
-		printTXT("X:", 30, 40, RA8875_WHITE, RA8875_BLACK, 9);
-		printTXT("Y:", 30, 170, RA8875_WHITE, RA8875_BLACK, 9);
-		Button(450,40, 10, RA8875_WHITE, RA8875_RED, "C", 0);
-		Button(450,170, 10, RA8875_WHITE, RA8875_RED, "C", 0);
-		Button(620,40, 10, RA8875_BLACK, RA8875_GREEN, "X", 0);
-		Button(620,170, 10, RA8875_BLACK, RA8875_GREEN, "Y", 0);
+		printTXT("X:", 30, 40, RA8875_WHITE, RA8875_BLACK, 7);
+		printTXT("Y:", 30, 170, RA8875_WHITE, RA8875_BLACK, 7);
 		switch (pTypeZ){
 			case 0: //XYZ
-				printTXT("Z:", 30, 300, RA8875_WHITE, RA8875_BLACK, 9);
-				Button(450,300, 10, RA8875_WHITE, RA8875_RED, "C", 0);
-				Button(620,300, 10, RA8875_BLACK, RA8875_GREEN, "Z", 0);
+				printTXT("Z:", 30, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;
 			case 1: //RPM
-				printTXT("RPM:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("RPM:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;	
 			case 2: //FIL
-				printTXT("FIL:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("FIL:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;
 			case 3: //ANG
-				printTXT("ANG:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
-				Button(450,300, 10, RA8875_WHITE, RA8875_RED, "C", 0);
+				printTXT("ANG:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;	
 			default:
 				break;
 		}
-		Button(60, 400, 10, RA8875_BLACK, RA8875_BLUE, "XYZ", 8);
-		Button(245, 400, 10, RA8875_BLACK, RA8875_BLUE, "RPM", 8);
-		Button(430, 400, 10, RA8875_BLACK, RA8875_BLUE, "FIL",8);
-		Button(615, 400, 10, RA8875_BLACK, RA8875_BLUE, "ANG", 8);
 		__tft.textEnlarge(2);
-		printTXT("Y stop:", 30, 240, RA8875_WHITE, RA8875_BLACK, 9);
+		//printTXT("Y stop:", 30, 240, RA8875_WHITE, RA8875_BLACK, 3);
 		toTXT(pStopY, true);
-		printTXT(result, 185, 240, RA8875_WHITE, RA8875_BLACK, 9);
+		printTXT(result, 230, 250, RA8875_WHITE, RA8875_BLACK, 3);
 		__tft.textEnlarge(3);
+
+		Buttons_Draw((ScreenStates) pTypeZ);
 	}
 	__tft.textMode();
 	if ((_oldX != pX) | pRefresh){
 		toTXT(pX, true);
-		printTXT(result, 125, 40, RA8875_WHITE, RA8875_BLACK, 9);
+		if (pModifAxe == axe_X){
+			printTXT(result, 125, 40, BLACK, WHITE, 7);
+		} 
+		else	{
+			printTXT(result, 125, 40, RA8875_WHITE, RA8875_BLACK, 7);
+		}
 		_oldX = pX;
 	}
 	if ((_oldY != pY) | pRefresh){
 		toTXT(pY, true);
-		printTXT(result, 125, 170, RA8875_WHITE, RA8875_BLACK, 9);
+		if (pModifAxe == axe_Y){
+			printTXT(result, 125, 170, BLACK, WHITE, 7);
+		}
+		else{
+			printTXT(result, 125, 170, RA8875_WHITE, RA8875_BLACK, 7);
+		}
 		_oldY = pY;
 	}
 	if ((_oldZ != pZ) | pRefresh){
 		toTXT(pZ, (pTypeZ == 0 | pTypeZ == 3));
 		switch (pTypeZ){
 			case 0: //XYZ
-				printTXT("Z:", 30, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("Z:", 30, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				//Button(450,300, 10, RA8875_WHITE, RA8875_RED, "C", 0);
 				//Button(620,300, 10, RA8875_BLACK, RA8875_GREEN, "Z", 0);
 				break;
 			case 1: //RPM
-				printTXT("RPM:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("RPM:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;	
 			case 2: //FIL
-				printTXT("FIL:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("FIL:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;
 			case 3: //ANG
-				printTXT("ANG:", 10, 300, RA8875_WHITE, RA8875_BLACK, 9);
+				printTXT("ANG:", 10, 300, RA8875_WHITE, RA8875_BLACK, 7);
 				break;	
 			default:
 				break;
 		}
-		printTXT(result, 125, 300, RA8875_WHITE, RA8875_BLACK, 9);
+		if (pModifAxe == axe_Z){
+			printTXT(result, 125, 300, BLACK, WHITE, 7);
+		}
+		else {
+			printTXT(result, 125, 300, RA8875_WHITE, RA8875_BLACK, 7);
+		}
 		_oldZ = pZ;
 	}
 	if ((_old_Y_Stop != pStopY) | pRefresh){
 		__tft.textEnlarge(2);
 		toTXT(pStopY, true);
-		printTXT(result, 185, 240, RA8875_WHITE, RA8875_BLACK, 9);
+		if (pModifAxe == axe_STOP_Y){
+			printTXT(result, 230, 250, BLACK, WHITE, 3);	
+		} 
+		else {
+			printTXT(result, 230, 250, RA8875_WHITE, RA8875_BLACK, 3);
+		}
 		__tft.textEnlarge(3);
 	}
 }
@@ -213,35 +351,11 @@ void TFT::MenuValue(uint8_t pAxe){
 	//affiche clavier numerique
 	char _c[2];
 	_c[1] = 0;
-	__tft.fillRect(400,0,400,480,RA8875_BLACK);
-	__tft.fillRect(0,370,400,110,RA8875_BLACK);
-	for (size_t i = 0; i < 4; i++)
-	{
-		for (size_t j = 0; j < 3; j++)
-		{
-			_c[0] = '9' - (2  - j + (i * 3));
-			if (i == 3){ 
-				switch (j)
-				{
-				case 0:
-					_c[0] = '<';
-					break;
-				case 1:
-					_c[0] = '0';
-					break;
-				case 2:
-					_c[0] = '>';
-					break;				
-				default:
-					break;
-				}	
-			}
-			Button(400 + (j * 150), 60 + (i * 80), 8, RA8875_BLACK, RA8875_BLUE, _c, 0);
-		}		
-	}	
-	Button(550, 380, 8, RA8875_BLACK, RA8875_BLUE, "+/-", 6);
+	__tft.fillRect(455,0,350,480,RA8875_BLACK);
+	__tft.fillRect(0,370,500,110,RA8875_BLACK);
+	Buttons_Draw(screen_value_Axe);
 	if (pAxe<3){
-		__tft.fillRect(100, pAxe * 150, 300, 100, RA8875_BLACK);
+		__tft.fillRect(110, pAxe * 150, 350, 95, RA8875_BLACK);
 		__tft.textEnlarge(3);
 	} else {
 		__tft.fillRect(200, 250, 200, 50, RA8875_BLACK);
@@ -308,7 +422,7 @@ int8_t TFT::MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX,  int3
 		if (pRefresh){
 			return PAS_DEMMARE;
 		}
-		_button = IfTouched(10, 6, 10, false);
+		_button = 0;//IfTouched(10, 6, 10, false);
 		switch (_button){
 			case 38:
 			case 48:
@@ -348,9 +462,9 @@ int8_t TFT::MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX,  int3
 		if (pRefresh){
 			__tft.fillScreen(RA8875_BLACK);
 			__tft.textEnlarge(2);
-			printTXT("FILETAGE en cours", 30, 40, RA8875_WHITE, RA8875_BLACK, 7);
-			printTXT("PAS:", 30, 120, RA8875_WHITE, RA8875_BLACK, 7);
-			printTXT(" X :", 30, 200, RA8875_WHITE, RA8875_BLACK, 7);
+			printTXT("FILETAGE en cours", 30, 40, RA8875_WHITE, RA8875_BLACK, 8);
+			printTXT("PAS:", 30, 120, RA8875_WHITE, RA8875_BLACK, 8);
+			printTXT(" X :", 30, 200, RA8875_WHITE, RA8875_BLACK, 8);
 			printTXT(" Y :", 30, 280, RA8875_WHITE, RA8875_BLACK, 7);
 			printTXT(" B :", 30, 360, RA8875_WHITE, RA8875_BLACK, 7);
 			Button(360, 400, 10, RA8875_BLACK, RA8875_RED, "ANN", 8);
@@ -434,7 +548,7 @@ int8_t TFT::MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX,  int3
 			__tft.print((int)(_calcul3 / 6000), DEC);
 
 */
-		_button = IfTouched(10, 6, 10, false);
+		_button = 0;// IfTouched(10, 6, 10, false);
 		if ((_button == 56) | (_button == 57)){
 			return ANNULER;
 		}
@@ -452,12 +566,30 @@ void TFT::Calcul_Coordonnees(double pvalue){
 }
 
 int16_t _result;
-int8_t TFT::IfTouched(uint16 pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, bool pWriteTXT){//retourne la position du button touché, 0 en haut à droite
+ButtonNames TFT::IfTouched(ScreenStates pScreenState, uint16_t pDelay){//(uint16 pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, bool pWriteTXT){//retourne le nom du button
 	if (m_readTouch()){
 		delay(pDelay);
 		if (!m_readTouch()){
-			return -1;
+			return bnNULL;
 		}
+		byte _index=0;
+		while ((Buttons[(byte)pScreenState][_index] != 0) & (_index < sizeof(Buttons[(byte)pScreenState])/4)){
+			if (Buttons[(byte)pScreenState][_index]->center.InRange(_Touched, Buttons[(byte)pScreenState][_index]->length, Buttons[(byte)pScreenState][_index]->height)){
+				DessineButton(*Buttons[(byte)pScreenState][_index], true);
+				ButtonLast = Buttons[(byte)pScreenState][_index];
+				return Buttons[(byte)pScreenState][_index]->name;
+			}
+#ifdef DEBUG
+		Serial.print("Index: ");
+		Serial.println(_index, DEC);
+#endif
+			_index++;
+		}
+#ifdef DEBUG
+		Serial.println("NON Trouvé");
+#endif
+		return bnNULL;
+		/*
 		_result = ((v_XTouch  * pNbrColonnes) / 800) + (pNbrColonnes *  ((v_YTouch * pNbrLignes) / 480)) + 1;
 		if (pWriteTXT){
 			toTXT(_result, true);
@@ -468,9 +600,10 @@ int8_t TFT::IfTouched(uint16 pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, 
 		Serial.print("Touched:");
 		Serial.println(_result, DEC);
 		return _result;
+		*/
 	}
 	else 
-		return -1;
+		return bnNULL;
 }
 
 ///////////////////////////////////////////
@@ -575,6 +708,7 @@ void TFT::Button(uint16 pX, uint16 pY, uint8_t pSize, uint16_t pFrontColor, uint
 void TFT::printTXT(char* pText, uint16 pX, uint16 pY, uint16_t pTextColor, uint16_t pBackColor, int pSize){
 	__tft.textMode();
 	__tft.textSetCursor(pX, pY);
+	__tft.setTextSize(pSize);
 #ifdef RA8875
 	SetTextColor(pTextColor, true);
 	SetTextColor(pBackColor, false);
@@ -625,23 +759,29 @@ void TFT::Chk_Busy(void)
 }
 
 bool TFT::m_readTouch() { //retrun true si detecte ecran touch�
-	__tft.touchGet(&v_XTouch, &v_YTouch);
-	delay(1);
-	if ((v_XTouch != 0) | (v_XTouch != 0)) {
-		delay(10);
-		__tft.touchGet(&v_XTouch, &v_YTouch);
+	__tft.touchGet(&_Touched);
+	if ((_Touched.x != 0) | (_Touched.y != 0)) {
+		//delay(10);
+		//__tft.touchGet(&v_XTouch, &v_YTouch);
 		/*
 		v_XTouch = map(v_XTouch, 70, 970, 0, 800);
 		v_YTouch = map(v_YTouch, 104, 880, 0, 480);
 		if (v_XTouch <= 0) { v_XTouch = 1; }
 		if (v_XTouch >= 800) { v_XTouch = 799; }
 		if (v_YTouch <= 0) { v_YTouch = 1; }
-		if (v_YTouch >= 480) { v_YTouch = 479; }
+		if (v_YTouch >= 480) { v_YTouch = 479; 
 		*/
+#ifdef DEBUG
+	Serial.print("Touch: ");
+	Serial.print(_Touched.x, DEC);
+	Serial.print('.');
+	Serial.println(_Touched.y, DEC);
+#endif
 		return true;
 	}
 	else
 	{
+
 		return false;
 	}
 return false;

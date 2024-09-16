@@ -85,7 +85,7 @@ class LS7366
 {
   public:
 	LS7366();
-	void init(byte chip_select_pin);
+	void init(byte chip_select_pin, byte count_mode);
 	void clear_mode_register_0();
 	void clear_mode_register_1();
 	void clear_counter();

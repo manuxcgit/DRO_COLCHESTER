@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "..\DRO.h"
+#include "BUTTON\button.h"
 
 #ifdef RA8875
     #define PIN_TFT_CS GPIO_NUM_5
@@ -80,12 +81,7 @@
 #ifdef SCREEN_ESP32
     #include <Arduino_GFX_Library.h>
     #include "TOUCH\TAMC_GT911.h"
-    /*
-    typedef struct Point {
-        int32_t x;
-        int32_t y;
-    } tsPoint_t;
-    */
+
     class Arduino_RPi_DPI_RGBPanel_extended : public Arduino_RPi_DPI_RGBPanel {
         public:
             Arduino_RPi_DPI_RGBPanel_extended(
@@ -96,7 +92,7 @@
 
             void touchInit();
             //retourne coordonnées du Touch ou 0,0 sinon
-            void touchGet(uint16_t *pX, u_int16_t *pY);
+            void touchGet(Point *pPoint);
 
             //pour compatibite avec RA8875    
             void graphicsMode();
@@ -133,6 +129,11 @@ class TFT{
     #define TFT_BL 2
     #define uchar u_int8_t    
 
+    #define FRAM_CS GPIO_NUM_10
+    #define FRAN_MOSI GPIO_NUM_11
+    #define FRAM_MISO GPIO_NUM_13
+    #define FRAM_CLK GPIO_NUM_12
+
     Arduino_ESP32RGBPanel bus = Arduino_ESP32RGBPanel(
         GFX_NOT_DEFINED /* CS */, GFX_NOT_DEFINED /* SCK */, GFX_NOT_DEFINED /* SDA */,
         41 /* DE */, 40 /* VSYNC */, 39 /* HSYNC */, 42 /* PCLK */,
@@ -150,20 +151,30 @@ class TFT{
         void clr(int8_t pSize){ __tft.fillScreen(0); __tft.setTextSize(pSize);}
 
 #endif
-uint16_t v_XTouch, v_YTouch;
 
 public:
     bool Init();
-    //pTypeZ 0=Fraiseuse, 1=RPM, 2=Filetage, 3=Position_Broche
-    void MenuMain(int32_t pX, int32_t pY, int32_t pZ, bool pRefresh, uint8_t pTypeZ, int32_t pStopY);
+    //pTypeZ 0=Fraiseuse, 1=RPM, 2=Filetage, 3=Position_Broche    pModifAxe si <>99 , affiche valeur de l'axe en couleur inversée lors modif valeur
+    void MenuMain(int32_t pX, int32_t pY, int32_t pZ, bool pRefresh, uint8_t pTypeZ, int32_t pStopY, byte pModifAxe);
     void MenuValue(uint8_t pAxe);
     int8_t MenuFiletage(uint8_t pIndexMenu, bool pRefresh, int32_t pPosX, int32_t pPosY, int32_t pPosBroche);//retourne si OK
-    int8_t IfTouched(uint16_t pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, bool pWriteTXT);//retourne la position du button touché
+    ButtonNames IfTouched(ScreenStates pScreenState, uint16_t pDelay);//(uint16_t pNbrColonnes, uint8_t pNbrLignes, uint16_t pDelay, bool pWriteTXT);//retourne le nom du button ou NULL
     void print(String pS){__tft.print(pS);}
     void printTXT(char* pText, uint16 pX, uint16 pY, uint16_t pTextColor, uint16_t pBackColor, int pSize);
-    //void clr(int8_t pSize){ __tft.fillScreen(0); __tft.textEnlarge(pSize);}
+    cBUTTON *Buttons[5][30];
+    cBUTTON *ButtonLast;
+    void Buttons_Init();
+    void Buttons_Draw(ScreenStates pScreenState);
+    void DessineButton(cBUTTON pButton, bool pInverted);
 
 private:
+    void Buttons_Init(ScreenStates pScreenState, byte pNbr, cBUTTON *pButton, ...);
+    cBUTTON button_b1, button_b2, button_b3, button_b4, button_b5, button_b6, button_b7, button_b8, button_b9, button_b0,
+            button_bmoins, button_bplus, button_bXYZ, button_bRPM, button_bFILETAGE, button_bANGLE, 
+            button_bCX, button_bVX, button_bCY, button_bVY, button_bCZ, button_bVZ, button_bCANGLE,
+            button_bANNULE, button_bVALIDE, button_StopY, button_bplusmoins;
+    Point _Touched;
+
     void Active_Window(uint16_t XL, uint16_t XR, uint16_t YT, uint16_t YB);
     void Chk_Busy(void);
     void Clear_Active_Window(void);

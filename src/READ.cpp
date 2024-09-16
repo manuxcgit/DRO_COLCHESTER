@@ -1,4 +1,4 @@
-#include <ESP32_OTAESP32_OTA.h>
+#include <ESP32_OTA\ESP32_OTA.h>
 #include "DRO.h"
 #include "LS7366/LS7366.h"
 #include "CRC/CRC.h"
@@ -16,14 +16,13 @@ void m_FirmwareUpdate(bool pEnd){
     TOGGLE(PIN_LED);
 }
 
-
 void setup(void){
-	Serial.begin(115200);
+	Serial.begin(57600);
 	ESP32_OTA.begin(ssid, password, 250, m_FirmwareUpdate);
-	_LS[axe_X].init(PIN_CS_X);
-	_LS[axe_Y].init(PIN_CS_Y);
-	_LS[axe_Z].init(PIN_CS_Z);
-	_LS[axe_BROCHE].init(PIN_CS_BROCHE);
+	_LS[axe_X].init(PIN_CS_X, QUADRX4);
+	_LS[axe_Y].init(PIN_CS_Y, QUADRX4);
+	_LS[axe_Z].init(PIN_CS_Z, QUADRX4);
+	_LS[axe_BROCHE].init(PIN_CS_BROCHE, NQUAD);
     pinMode(PIN_LED, OUTPUT);
 	_Loop_Value = 250;
 	_nbrSent = 0;
@@ -58,21 +57,27 @@ void loop(void) {
 	}
 
 	//Lit messages depuis SCREEN
-	/*
 	while (Serial.available()){
-		
+		// "Cn" = RAZ compteur 'axe'
 		_received = Serial.read();
 		if (_received != '\n'){
 			_Serial_Received += (char)_received;
 		}	
 		else{
-			Serial.print("Received:");
-			Serial.println(_Serial_Received);
-			_Serial_Received = "";
+			switch ( _Serial_Received[0])
+			{
+			case 'C':
+				byte _compteur = (byte)_Serial_Received[1] - '0';
+				if ((_compteur>=0) & (_compteur<4)){
+					_LS[_compteur].clear_counter();
+				}
+				break;			
+			default:
+				break;
+			}
 		}	
 		
 	}
-	*/
 
 	delay(10);
 }
