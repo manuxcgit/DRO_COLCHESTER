@@ -1,14 +1,12 @@
 #include "DRO.h"
-#include "TFT/TFT.h"
+#include "TFT\TFT.h"
 #include "CRC\CRC.h"
 #include <ESP32_OTA\ESP32_OTA.h>
 #include <SoftwareSerial.h>
-
 #include "FRAM\FRAM.h"
 
 const char* ssid = "ESP32_DRO_SCREEN";
 const char* password = "12345678";
-int v_count;
 
 #ifdef RA8875
     TFT __tft;
@@ -30,9 +28,7 @@ int32_t _posY_Depart, _posBrocheMovY, _pasFiletage = 0, _Y_stop = 1000, _Y_Stop_
 bool _ok,  _firmwareUpdate;
 uint8_t addrSizeInBytes = 2; // Default to address size of two bytes
 uint32_t memSize;
-//Adafruit_FRAM_SPI fram  = Adafruit_FRAM_SPI(FRAM_CS);// FRAM_CLK, FRAM_MISO, FRAM_MOSI, FRAM_CS);
-
-static FRAM_MB85RS_SPI FRAM(FRAM_CS);
+int v_count;
 
 void m_AfficheXYZ(bool pRefresh, ScreenStates pTypeZ){
 	#ifdef DEBUG
@@ -371,32 +367,7 @@ void m_loop_screen(){
 		_tft.ButtonLast = 0;
 	}
 }
-/*
-    int32_t readBack(uint32_t addr, int32_t data) {
-        int32_t check = !data;
-        int32_t wrapCheck, backup;
-        fram.read(addr, (uint8_t *)&backup, sizeof(int32_t));
-        fram.writeEnable(true);
-        fram.write(addr, (uint8_t *)&data, sizeof(int32_t));
-        fram.writeEnable(false);
-        fram.read(addr, (uint8_t *)&check, sizeof(int32_t));
-        fram.read(0, (uint8_t *)&wrapCheck, sizeof(int32_t));
-        fram.writeEnable(true);
-        fram.write(addr, (uint8_t *)&backup, sizeof(int32_t));
-        fram.writeEnable(false);
-        // Check for warparound, address 0 will work anyway
-        if (wrapCheck == check)
-            check = 0;
-        return check;
-    }
 
-    bool testAddrSize(uint8_t addrSize) {
-        fram.setAddressSize(addrSize);
-        if (readBack(4, 0xbeefbead) == 0xbeefbead)
-            return true;
-        return false;
-    }
-*/
 void setup(void) {
 	Serial.begin(115200);
 	_SoftUart.begin(57600, SWSERIAL_8N1, GPIO_NUM_18, GPIO_NUM_17, false);
@@ -414,6 +385,22 @@ void setup(void) {
 	{
 		_valuesSerial[i] = 0;
 	}
+	//Test FRAM
+	SPI.begin();
+	Memory_Start();
+	delay(10);
+	if (Memory_ReadULong(0)!=12345678){
+		Memory_WriteULong(0, 12345678);
+		_tft.printTXT("PROBLEME D\'ACCES A LA FRAM !!",50,180,RED, BLACK,3);
+		_tft.printTXT("Appuyez sur l'ecran pour redemarrer",50,250,WHITE, BLACK,2);
+		while (!_tft.Touched()){delay(5);}
+		ESP.restart();
+	}
+	else{
+		_tft.printTXT("FRAM OK !!",100,180,GREEN, BLACK, 3);
+		_tft.printTXT("Appuyez sur l'ecran" ,100, 250,WHITE, BLACK,2);
+		while (!_tft.Touched()){delay(5);}
+	}
 	_Axe[axe_X].init(axe_X, 5);
 	_Axe[axe_Y].init(axe_Y, 5);
 	_Axe[axe_Z].init(axe_Z, 5);
@@ -423,55 +410,6 @@ void setup(void) {
 	_tft.MenuMain(0, 0, 0, true, screen_XYZ, _Y_stop, 99);
 	_screenState = screen_XYZ;// (ScreenStates) MODE_TOUR;		
 	_RPM_count = 0;
-
-	//TEST FRAM
-	/*
-	addrSizeInBytes = 2;
-	while (!fram.begin(addrSizeInBytes)) {
-
-  
-    Serial.println("No SPI FRAM found ... check your connections\r\n");
-   delay(2000);
-  }
-    Serial.println("Found SPI FRAM");
-  if (testAddrSize(2))
-    addrSizeInBytes = 2;
-  else if (testAddrSize(3))
-    addrSizeInBytes = 3;
-  else if (testAddrSize(4))
-    addrSizeInBytes = 4;
-  else {
-    Serial.println(
-        "SPI FRAM can not be read/written with any address size\r\n");
-    while (1)
-      ;
-  }
-
-  memSize = 0;
-  while (readBack(memSize, memSize) == memSize) {
-    memSize += 256;
-    // Serial.print("Block: #"); Serial.println(memSize/256);
-  }
-
-  Serial.print("SPI FRAM address size is ");
-  Serial.print(addrSizeInBytes);
-  Serial.println(" bytes.");
-  Serial.println("SPI FRAM capacity appears to be..");
-  Serial.print(memSize);
-  Serial.println(" bytes");
-  Serial.print(memSize / 0x400);
-  Serial.println(" kilobytes");
-  Serial.print((memSize * 8) / 0x400);
-  Serial.println(" kilobits");
-  if (memSize >= (0x100000 / 8)) {
-    Serial.print((memSize * 8) / 0x100000);
-    Serial.println(" megabits");
-  }
-*/
-while (1){
-    FRAM.init();
-	delay(2000);
-}
 }
 
 void loop(void) {

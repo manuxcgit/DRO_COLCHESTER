@@ -166,6 +166,7 @@ public:
     void Buttons_Init();
     void Buttons_Draw(ScreenStates pScreenState);
     void DessineButton(cBUTTON pButton, bool pInverted);
+    bool Touched(){return m_readTouch();}
 
 private:
     void Buttons_Init(ScreenStates pScreenState, byte pNbr, cBUTTON *pButton, ...);
